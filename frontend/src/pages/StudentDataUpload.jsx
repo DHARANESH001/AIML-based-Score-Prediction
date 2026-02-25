@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Upload, Calculator, BookOpen, Brain, Moon, FileText, TrendingUp, Plus, Trash2 } from 'lucide-react';
+import API from "../services/api";
 
 export default function StudentDataUpload() {
   const [students, setStudents] = useState([
@@ -13,25 +14,6 @@ export default function StudentDataUpload() {
       performanceIndex: ''
     }
   ]);
-
-  const calculatePerformanceIndex = (hoursStudied, previousScores, extracurricular, sleepHours, sampleQuestions) => {
-    const hours = parseFloat(hoursStudied) || 0;
-    const scores = parseFloat(previousScores) || 0;
-    const extra = extracurricular === 'yes' ? 10 : 0;
-    const sleep = parseFloat(sleepHours) || 0;
-    const questions = parseFloat(sampleQuestions) || 0;
-
-    // Performance Index formula
-    const performanceIndex = (
-      (hours * 5) + 
-      (scores * 0.3) + 
-      extra + 
-      (sleep * 2) + 
-      (questions * 3)
-    ).toFixed(2);
-
-    return Math.min(100, Math.max(0, performanceIndex));
-  };
 
   const handleInputChange = (id, field, value) => {
     setStudents(prevStudents => 
@@ -77,12 +59,25 @@ export default function StudentDataUpload() {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Student Data:', students);
-    // Here you would typically send this data to your backend
-    alert('Student data uploaded successfully!');
-  };
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const res = await API.post("/predict", students);
+
+    // Map backend response to frontend format
+    const updatedStudents = res.data.map(student => ({
+      ...student,
+      performanceIndex: student.predictedScore.toFixed(1)
+    }));
+
+    setStudents(updatedStudents);
+    alert("Prediction Completed");
+
+  } catch {
+    alert("Prediction failed");
+  }
+};
 
   return (
     <div className="student-upload-container">
@@ -245,6 +240,18 @@ export default function StudentDataUpload() {
       </div>
     </div>
   );
+}
+
+function calculatePerformanceIndex(hoursStudied, previousScores, extracurricular, sleepHours, sampleQuestions) {
+  const extra = extracurricular === "yes" ? 10 : 0;
+  const prediction = 
+    (parseFloat(hoursStudied) * 4.5) +
+    (parseFloat(previousScores) * 0.4) +
+    extra +
+    (parseFloat(sleepHours) * 1.5) +
+    (parseFloat(sampleQuestions) * 2);
+  
+  return Math.min(100, prediction).toFixed(1);
 }
 
 function getPerformanceLevel(index) {
