@@ -13,7 +13,7 @@ const navigate = useNavigate();
   e.preventDefault();
 
   try {
-    const res = await API.post("/login", {
+    const res = await API.post("/auth/login", {
       email,
       password
     });
